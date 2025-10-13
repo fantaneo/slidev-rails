@@ -1,0 +1,43 @@
+<div style="max-width: 600px; margin: 0 auto;">
+  <h2 style="margin-bottom: 20px; color: #2c3e50;">新規スライド作成</h2>
+
+  <div class="card">
+    <%= form_with(model: @slide, local: true) do |form| %>
+      <% if @slide.errors.any? %>
+        <div class="alert" style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 10px; font-size: 16px;">エラーが発生しました:</h3>
+          <ul style="margin-left: 20px;">
+            <% @slide.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="form-group">
+        <%= form.label :name, "スライド名" %>
+        <%= form.text_field :name, placeholder: "例: Rails入門", required: true %>
+        <small style="color: #6c757d; display: block; margin-top: 5px;">
+          このスライド名からURLが自動生成されます
+        </small>
+      </div>
+
+      <div class="form-group">
+        <%= form.label :description, "説明（任意）" %>
+        <%= form.text_area :description, placeholder: "スライドの説明を入力してください" %>
+      </div>
+
+      <div class="form-actions">
+        <%= form.submit "作成", class: "btn btn-primary", style: "margin-right: 10px;" %>
+        <%= link_to "キャンセル", slides_path, class: "btn", style: "background-color: #6c757d;" %>
+      </div>
+      
+      <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+        <strong>⚠️ 注意:</strong> スライドの作成には数分かかる場合があります。
+      </div>
+    <% end %>
+  </div>
+  
+  <%= link_to "← 一覧に戻る", slides_path, style: "display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none;" %>
+</div>
+

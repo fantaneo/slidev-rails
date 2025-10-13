@@ -1,0 +1,14 @@
+{
+  "name": "slidev-manager",
+  "version": "1.0.0",
+  "description": "Slidev slide management system with Ruby on Rails",
+  "private": true,
+  "dependencies": {
+    "@slidev/cli": "^0.48.0",
+    "@slidev/theme-default": "latest"
+  },
+  "scripts": {
+    "create": "npm create slidev@latest"
+  }
+}
+

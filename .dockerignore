@@ -1,0 +1,51 @@
+# Git関連
+.git
+.gitignore
+.github
+
+# ログファイル
+log/*
+*.log
+
+# 一時ファイル
+tmp/*
+*.swp
+*.swo
+*~
+
+# 依存関係（Dockerビルド時に再インストールするため）
+node_modules
+vendor/bundle
+
+# データベース（ボリュームで管理するため）
+db/*.sqlite3
+db/*.sqlite3-shm
+db/*.sqlite3-wal
+
+# ビルド成果物
+public/slides/*
+slidev_projects/*/node_modules
+slidev_projects/*/dist
+
+# macOS固有ファイル
+.DS_Store
+
+# IDEファイル
+.vscode
+.idea
+*.sublime-*
+
+# 環境変数ファイル
+.env
+.env.local
+
+# テストカバレッジ
+coverage
+
+# ドキュメント（開発用）
+*.md
+!README.md
+
+# キャッシュ
+tmp/cache/*
+

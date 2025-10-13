@@ -1,0 +1,38 @@
+<h2 style="margin-bottom: 20px; color: #2c3e50;">スライド一覧</h2>
+
+<% if @slides.empty? %>
+  <div class="card">
+    <p style="text-align: center; color: #6c757d;">
+      スライドがまだありません。新規作成ボタンから最初のスライドを作成してください。
+    </p>
+  </div>
+<% else %>
+  <table>
+    <thead>
+      <tr>
+        <th>名前</th>
+        <th>説明</th>
+        <th>URL</th>
+        <th style="width: 200px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @slides.each do |slide| %>
+        <tr>
+          <td><%= slide.name %></td>
+          <td><%= slide.description %></td>
+          <td>
+            <%= link_to "/slides/#{slide.slug}/", "/slides/#{slide.slug}/", target: '_blank' %>
+          </td>
+          <td>
+            <%= button_to 'ビルド', build_slide_path(slide), method: :post, class: 'btn btn-sm btn-info', style: 'margin-right: 5px;' %>
+            <%= button_to '削除', slide_path(slide), method: :delete, 
+                          data: { confirm: '本当に削除しますか？' }, 
+                          class: 'btn btn-sm btn-danger' %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+

@@ -9,6 +9,9 @@ SlidevとRuby on Railsを用いたプレゼンテーション用のスライド�
 * ✅ Slidevでスライドを作成できること
 * ✅ Slidevのスライド（プロジェクト）を追加・削除できること
 * ✅ SlidevのスライドはURL指定で行えること（例: `http://localhost:3000/slides/slide-01/`）
+* ✅ スライドの編集機能
+* ✅ ビルド処理の非同期化（Delayed Jobを使用）
+* ✅ ビルドステータスの表示
 
 ## 技術スタック
 
@@ -17,6 +20,7 @@ SlidevとRuby on Railsを用いたプレゼンテーション用のスライド�
 - **Database**: SQLite3
 - **Node.js**: 20.x以上
 - **Slidev**: 0.48.0
+- **Background Jobs**: Delayed Job
 
 ## セットアップ
 
@@ -47,6 +51,21 @@ docker-compose up -d
 #### 3. アプリケーションへのアクセス
 
 ブラウザで `http://localhost:3000` にアクセスしてください。
+
+#### 3.5. Delayed Jobワーカーの起動
+
+```bash
+# Docker環境でワーカーを起動
+docker-compose exec web ./bin/delayed_job start
+
+# ワーカーログを確認
+docker-compose logs -f web | grep delayed_job
+
+# ワーカーを停止
+docker-compose exec web ./bin/delayed_job stop
+```
+
+**注意**: ワーカーをコンテナ内で常に実行させるには、`docker-compose.yml` に専用の `delayed_job` サービスを追加することをお勧めします（[DELAYED_JOB_SETUP.md](./DELAYED_JOB_SETUP.md) 参照）。
 
 #### その他のDockerコマンド
 
@@ -116,6 +135,26 @@ bundle exec rails server
 
 ブラウザで `http://localhost:3000` にアクセスしてください。
 
+#### 5. Delayed Jobワーカーの起動（別のターミナルウィンドウ）
+
+```bash
+./bin/delayed_job start
+```
+
+**注意**: ジョブキューを処理するため、ワーカーは常に実行している必要があります。開発環境ではバックグラウンドで実行してください。
+
+ログを確認する:
+```bash
+tail -f log/delayed_job.log
+```
+
+ワーカーを停止する:
+```bash
+./bin/delayed_job stop
+```
+
+詳細は [DELAYED_JOB_SETUP.md](./DELAYED_JOB_SETUP.md) を参照してください。
+
 ## 使い方
 
 ### スライドの作成
@@ -123,11 +162,22 @@ bundle exec rails server
 1. トップページの「新規作成」ボタンをクリック
 2. スライド名と説明（任意）を入力
 3. 「作成」ボタンをクリック
-4. Slidevプロジェクトが自動的に作成され、ビルドされます（数分かかる場合があります）
+4. Slidevプロジェクトがバックグラウンドで作成・ビルドされます
+5. スライド一覧画面でステータスを確認できます
+   - 「準備中」→「ビルド中」→「完了」の順に遷移します
+
+### スライドのステータス確認
+
+スライド一覧画面にそれぞれのスライドのビルドステータスが表示されます：
+
+- **準備中**: スライド作成待ち中
+- **ビルド中**: 現在ビルド処理を実行中
+- **完了**: ビルドが正常に完了
+- **失敗**: ビルドに失敗（エラーメッセージが表示されます）
 
 ### スライドの表示
 
-一覧画面のURL列にあるリンクをクリックすると、ビルドされたスライドが新しいタブで開きます。
+ステータスが「完了」の場合、一覧画面のURL列にあるリンクをクリックすると、ビルドされたスライドが新しいタブで開きます。
 
 URLの形式: `http://localhost:3000/slides/<slug>/`
 
@@ -137,9 +187,34 @@ URLの形式: `http://localhost:3000/slides/<slug>/`
 
 スライドのソースファイルを編集した後、一覧画面の「ビルド」ボタンをクリックすることで、スライドを再ビルドできます。
 
+**注意**: ビルド中のスライドに対しては、編集・ビルド・削除操作はできません。
+
+### スライドの編集
+
+一覧画面の「編集」ボタンをクリックすると、スライドの`slides.md`ファイルをWebエディタで編集できます。
+
+**注意**: ビルド中のスライドは編集できません。ビルドが完了するまでお待ちください。
+
+1. 編集画面を開く
+   - 一覧画面の「編集」ボタンをクリック
+   
+2. Markdownを編集
+   - `slides.md`の内容を直接編集
+   - Slidev形式の構文に従う
+   
+3. 保存する
+   - 「保存して編集画面を閉じる」ボタンをクリック
+   
+4. 再ビルドする
+   - 編集内容を反映させるため、一覧画面から「ビルド」ボタンをクリック
+
+**注意**: 編集後は必ず「ビルド」ボタンをクリックして、スライドを再ビルドしてください。
+
 ### スライドの削除
 
 一覧画面の「削除」ボタンをクリックすると、Slidevプロジェクトとビルド成果物の両方が削除されます。
+
+**注意**: ビルド中のスライドは削除できません。ビルドが完了するまでお待ちください。
 
 ## ディレクトリ構成
 
@@ -196,14 +271,62 @@ rails-slidev/
 | slug         | string  | URL用のスラッグ（ユニーク）   |
 | project_path | string  | Slidevプロジェクトのパス      |
 | description  | text    | スライドの説明（任意）        |
+| status       | string  | ビルドステータス（pending/building/completed/failed） |
+| error_message| text    | ビルド失敗時のエラーメッセージ |
 | created_at   | datetime| 作成日時                      |
 | updated_at   | datetime| 更新日時                      |
 
+### バックグラウンドジョブの処理
+
+このアプリケーションはDelayed Jobを使用して、スライド作成とビルド処理を非同期で実行します：
+
+- **CreateSlidevProjectJob**: Slidevプロジェクトの作成と初期ビルド
+- **BuildSlidevProjectJob**: スライドの再ビルド
+
+ジョブはDelayed Job テーブル(`delayed_jobs`)で管理され、キューから順序に従って処理されます。
+
+#### ワーカーの起動
+
+ローカル環境でワーカーを実行するには：
+
+```bash
+# ワーカープロセスを起動（ジョブを処理）
+bundle exec delayed_job start
+
+# ワーカープロセスを停止
+bundle exec delayed_job stop
+
+# ワーカープロセスを再起動
+bundle exec delayed_job restart
+
+# ワーカーログを確認
+tail -f log/delayed_job.log
+```
+
+#### Docker環境でのワーカー実行
+
+Docker Composeを使用している場合、`docker-compose.yml`に以下のようなワーカーサービスを追加できます：
+
+```yaml
+delayed_job:
+  build: .
+  command: bundle exec delayed_job run
+  volumes:
+    - .:/app
+    - bundle:/bundle
+    - node_modules:/app/node_modules
+    - slidev_projects:/app/slidev_projects
+    - public_slides:/app/public/slides
+  environment:
+    - RAILS_ENV=development
+    - DATABASE_URL=sqlite3:db/development.sqlite3
+  depends_on:
+    - web
+```
+
 ## 制限事項
 
-- スライドの作成・ビルドは同期処理のため、完了まで待機が必要です
-- 大量のスライドを作成する場合、ディスク容量に注意が必要です
-- スライドの編集機能は含まれていません（直接 `slidev_projects/` 内のファイルを編集してください）
+- 大量のスライドを同時にビルドする場合、ディスク容量とメモリに注意が必要です
 
 ## Docker環境について
 
@@ -260,12 +383,11 @@ Docker Desktopのメモリ割り当てが不足している場合は、Docker De
 
 ## 今後の改善案
 
-- [ ] ビルド処理の非同期化（Sidekiqなどのジョブキュー使用）
-- [ ] スライドの編集インターフェース
-- [ ] ビルドステータスの表示
-- [ ] プレビュー機能
+- [ ] Delayed Jobワーカーのスケーリング
+- [ ] スライドのプレビュー機能
 - [ ] テーマのカスタマイズ機能
 - [ ] スライドのエクスポート機能（PDF等）
+- [ ] 複数ユーザーのサポート
 
 ## ライセンス
 

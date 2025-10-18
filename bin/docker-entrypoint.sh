@@ -6,6 +6,8 @@ if [ -f tmp/pids/server.pid ]; then
   rm tmp/pids/server.pid
 fi
 
+bundle install
+
 # データベースが存在しない場合は作成とマイグレーションを実行
 if [ ! -f db/development.sqlite3 ]; then
   echo "データベースを初期化しています..."

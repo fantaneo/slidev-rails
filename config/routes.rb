@@ -8,9 +8,13 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "slides#index"
 
+  # ActionCable WebSocket サーバー
+  mount ActionCable.server => '/cable'
+
   resources :slides do
     member do
       post :build
+      get :slide_html
     end
   end
 end

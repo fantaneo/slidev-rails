@@ -11,6 +11,9 @@ gem "stimulus-rails"
 gem "jbuilder"
 gem "tzinfo-data", platforms: %i[ mswin mswin64 mingw x64_mingw jruby ]
 gem "bootsnap", require: false
+gem "delayed_job"
+gem "delayed_job_active_record"
+gem "daemons"
 
 group :development, :test do
   gem "debug", platforms: %i[ mri ]

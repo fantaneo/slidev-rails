@@ -1,0 +1,39 @@
+<tr <%= "id=#{dom_id(slide)}" %>>
+  <td><%= slide.name %></td>
+  <td><%= slide.description %></td>
+  <td>
+    <% case slide.status %>
+    <% when 'pending' %>
+    <span class="badge" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 3px;">準備中</span>
+    <% when 'building' %>
+    <span class="badge" style="background-color: #ffc107; color: black; padding: 5px 10px; border-radius: 3px;">ビルド中...</span>
+    <% when 'completed' %>
+    <span class="badge" style="background-color: #28a745; color: white; padding: 5px 10px; border-radius: 3px;">完了</span>
+    <% when 'failed' %>
+    <span class="badge" style="background-color: #dc3545; color: white; padding: 5px 10px; border-radius: 3px;">失敗</span>
+    <% end %>
+    <% if slide.error_message.present? %>
+    <div style="font-size: 12px; color: #dc3545; margin-top: 5px;">
+      エラー: <%= truncate(slide.error_message, length: 50) %>
+    </div>
+    <% end %>
+  </td>
+  <td>
+    <% if slide.completed? %>
+    <%= link_to "/slides/#{slide.slug}/", "/slides/#{slide.slug}/", target: '_blank' %>
+    <% else %>
+    <span style="color: #6c757d;">-</span>
+    <% end %>
+  </td>
+  <td>
+    <% if slide.building? %>
+    <span style="color: #6c757d;">ビルド中のため操作不可</span>
+    <% else %>
+    <%= link_to '編集', edit_slide_path(slide), class: 'btn btn-sm btn-warning', style: 'margin-right: 5px; text-decoration: none; display: inline-block;' %>
+    <%= button_to 'ビルド', build_slide_path(slide), method: :post, class: 'btn btn-sm btn-info', style: 'margin-right: 5px;' %>
+    <%= button_to '削除', slide_path(slide), method: :delete, 
+                        data: { confirm: '本当に削除しますか？' }, 
+                        class: 'btn btn-sm btn-danger' %>
+    <% end %>
+  </td>
+</tr>

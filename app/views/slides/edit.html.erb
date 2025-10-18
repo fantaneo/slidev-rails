@@ -1,0 +1,48 @@
+<h2 style="margin-bottom: 20px; color: #2c3e50;">スライド編集: <%= @slide.name %></h2>
+
+<div class="card">
+  <%= form_with(model: @slide, local: true) do |form| %>
+  <% if @slide.errors.any? %>
+  <div id="error_explanation" style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 12px; margin-bottom: 20px;">
+    <h4><%= pluralize(@slide.errors.count, "error") %> prohibited this slide from being saved:</h4>
+    <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+      <% @slide.errors.full_messages.each do |message| %>
+      <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+  <% end %>
+
+  <div style="margin-bottom: 15px;">
+    <label for="slide_slides_content" style="display: block; font-weight: bold; margin-bottom: 5px; color: #2c3e50;">
+      slides.md の内容
+    </label>
+    <%= form.text_area :slides_content, 
+          value: @slides_content, 
+          rows: 30, 
+          style: 'width: 100%; padding: 10px; font-family: monospace; font-size: 14px; border: 1px solid #ddd; border-radius: 4px;' %>
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <small style="color: #666;">
+      Markdown形式でスライドを編集してください。詳細については、
+      <a href="https://sli.dev/guide/syntax" target="_blank" style="color: #0066cc;">Slidev公式ドキュメント</a>
+      を参照してください。
+    </small>
+  </div>
+
+  <div style="display: flex; gap: 10px;">
+    <%= form.submit '保存して編集画面を閉じる', class: 'btn btn-primary', style: 'padding: 10px 20px;' %>
+    <%= link_to 'キャンセル', slides_path, class: 'btn btn-secondary', style: 'padding: 10px 20px; text-decoration: none; display: inline-block;' %>
+  </div>
+  <% end %>
+</div>
+
+<div style="margin-top: 30px; padding: 15px; background-color: #f0f8ff; border-left: 4px solid #0066cc; border-radius: 4px;">
+  <h4 style="margin-top: 0; color: #0066cc;">💡 ヒント</h4>
+  <ul style="margin: 0; padding-left: 20px;">
+    <li>編集内容を保存した後、「スライド一覧」から「ビルド」ボタンをクリックしてスライドを再ビルドしてください。</li>
+    <li>Slidev形式の記法が正しいか確認してから保存してください。</li>
+    <li>ビルド時にエラーが発生する場合は、エラーメッセージから原因を確認できます。</li>
+  </ul>
+</div>

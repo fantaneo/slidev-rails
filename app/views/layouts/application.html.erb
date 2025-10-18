@@ -6,6 +6,53 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <!-- Turbo and Stimulus from CDN -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@hotwired/turbo": "https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.es2017-umd.js",
+          "@hotwired/stimulus": "https://cdn.jsdelivr.net/npm/@hotwired/stimulus@3.2.2/dist/stimulus.min.js"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as Turbo from "@hotwired/turbo";
+      import * as Stimulus from "@hotwired/stimulus";
+      
+      window.Turbo = Turbo;
+      window.Stimulus = Stimulus;
+      
+      // Turbo Streams のメッセージ受信をログ
+      document.addEventListener('turbo:submit-end', function(event) {
+        console.log('[Turbo] Submit end:', event);
+      });
+      
+      // Toast 通知を5秒後に自動削除
+      document.addEventListener('DOMContentLoaded', function() {
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(toast => {
+          setTimeout(() => {
+            // アニメーション終了を待って削除
+            setTimeout(() => {
+              toast.remove();
+            }, 300); // アニメーション時間
+          }, 5000); // 5秒後
+        });
+      });
+      
+      // ページ遷移後の新しいToastにも対応
+      document.addEventListener('turbo:load', function() {
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(toast => {
+          setTimeout(() => {
+            setTimeout(() => {
+              toast.remove();
+            }, 300);
+          }, 5000);
+        });
+      });
+    </script>
+
     <style>
       * {
         margin: 0;
@@ -162,6 +209,59 @@
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
+      
+      /* Toast 通知スタイル */
+      .toast-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 9999;
+        pointer-events: none;
+      }
+      
+      .toast {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 16px 20px;
+        margin-bottom: 10px;
+        min-width: 300px;
+        max-width: 500px;
+        pointer-events: auto;
+        animation: slideIn 0.3s ease-out, slideOut 0.3s ease-out 4.7s forwards;
+      }
+      
+      .toast.notice {
+        border-left: 4px solid #28a745;
+        color: #155724;
+      }
+      
+      .toast.alert {
+        border-left: 4px solid #dc3545;
+        color: #721c24;
+      }
+      
+      @keyframes slideIn {
+        from {
+          transform: translateX(-400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(-400px);
+          opacity: 0;
+        }
+      }
     </style>
   </head>
 
@@ -174,13 +274,14 @@
     </header>
 
     <div class="container">
-      <% if notice %>
-        <div class="notice"><%= notice %></div>
-      <% end %>
-      
-      <% if alert %>
-        <div class="alert"><%= alert %></div>
-      <% end %>
+      <div class="toast-container">
+        <% if notice %>
+          <div class="toast notice"><%= notice %></div>
+        <% end %>
+        <% if alert %>
+          <div class="toast alert"><%= alert %></div>
+        <% end %>
+      </div>
 
       <%= yield %>
     </div>

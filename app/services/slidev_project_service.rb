@@ -13,12 +13,21 @@ class SlidevProjectService
     # Slidevプロジェクトの初期化
     # "Install and start it now?" のプロンプトに自動的に "no" を応答
     cmd = "cd #{PROJECTS_DIR} && echo 'n' | npm create slidev@latest #{name} -- --template basic --yes"
+
+    Rails.logger.info("Creating Slidev project: #{name}")
+    Rails.logger.info("Command: #{cmd}")
+
     success = system(cmd)
 
     unless success
-      raise "Slidevプロジェクト作成に失敗しました。終了コード: #{$?.exitstatus}"
+      exit_code = $?.exitstatus
+      Rails.logger.error("Slidev project creation failed for: #{name}")
+      Rails.logger.error("Exit Code: #{exit_code}")
+      Rails.logger.error("Project Path: #{project_path}")
+      raise "Slidevプロジェクト作成に失敗しました。終了コード: #{exit_code}"
     end
 
+    Rails.logger.info("Slidev project created successfully: #{project_path}")
     project_path.to_s
   end
 
@@ -30,7 +39,7 @@ class SlidevProjectService
     # エラー詳細をキャプチャするため、出力をログファイルに記録
     # Node.jsのヒープメモリを4GBに増やしてメモリ不足エラーを回避
     log_file = Rails.root.join('log', "slidev_build_#{slide.slug}.log")
-    cmd = "cd #{project_path} && npm install && NODE_OPTIONS='--max-old-space-size=4096' npm run build -- --base /slides/#{slide.slug}/ --out #{output_dir} > #{log_file} 2>&1"
+    cmd = "cd #{project_path} && npm install && NODE_OPTIONS='--max-old-space-size=4096' npm run build -- --base /slides/#{slide.slug}/ --out #{output_dir} >> #{log_file} 2>&1"
     success = system(cmd)
 
     unless success
@@ -59,6 +68,28 @@ class SlidevProjectService
     end
 
     raise errors.join(', ') if errors.any?
+  end
+
+  # slides.mdの内容を読み込む
+  def read_slides_md(slide)
+    slides_md_path = File.join(slide.project_path, 'slides.md')
+
+    unless File.exist?(slides_md_path)
+      raise "slides.mdが見つかりません: #{slides_md_path}"
+    end
+
+    File.read(slides_md_path)
+  end
+
+  # slides.mdの内容を保存する
+  def write_slides_md(slide, content)
+    slides_md_path = File.join(slide.project_path, 'slides.md')
+
+    unless File.exist?(slide.project_path)
+      raise "プロジェクトディレクトリが見つかりません: #{slide.project_path}"
+    end
+
+    File.write(slides_md_path, content)
   end
 
   private

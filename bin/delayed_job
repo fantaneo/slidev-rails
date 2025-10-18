@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'config', 'environment'))
+require 'daemons'
+
+# Create PID directory if needed
+pid_dir = File.join(Rails.root, 'tmp', 'pids')
+FileUtils.mkdir_p(pid_dir)
+
+# Run delayed_job via Daemons
+Daemons.run(File.join(File.dirname(__FILE__), 'delayed_job_app'),
+  ARGV: ARGV,
+  dir: pid_dir,
+  dir_mode: :normal,
+  log_dir: File.join(Rails.root, 'log'),
+  log_output: true,
+  monitor: false,
+  multiple: true
+)

@@ -1,12 +1,25 @@
 class SlidesController < ApplicationController
-  before_action :set_slide, only: [:show, :destroy, :build]
+  before_action :set_slide, only: [:show, :destroy, :build, :edit, :update, :slide_html]
 
   def index
     @slides = Slide.all.order(created_at: :desc)
+    respond_to do |format|
+      format.html
+      format.json { render json: @slides }
+    end
   end
 
   def show
     # スライドの詳細表示（必要に応じて実装）
+    respond_to do |format|
+      format.html
+      format.json { render json: @slide }
+    end
+  end
+
+  def slide_html
+    # ポーリング用の行HTMLを返す
+    render partial: "slides/slide", locals: { slide: @slide }, layout: false
   end
 
   def new
@@ -42,35 +55,39 @@ class SlidesController < ApplicationController
         return
       end
 
-      # Slidevプロジェクトを作成
-      project_path = service.create_project(@slide.slug)
-      @slide.project_path = project_path
+      # Slidevプロジェクト作成をジョブとしてエンキュー
+      # project_pathはジョブ実行後に設定されるため、ここではnilのままにする
+      @slide.project_path = "pending"
+      @slide.status = "pending"
 
       # データベースに保存
       if @slide.save
-        # ビルド処理を実行
-        service.build_project(@slide)
-        redirect_to slides_path, notice: 'スライドを作成しました'
+        # バックグラウンドジョブとしてプロジェクト作成と初期ビルドをエンキュー
+        CreateSlidevProjectJob.perform_later(@slide.id)
+        redirect_to slides_path, notice: 'スライドを作成しています。しばらくお待ちください...'
       else
-        # プロジェクト作成は成功したが保存に失敗した場合、プロジェクトを削除
-        FileUtils.rm_rf(project_path) if File.exist?(project_path)
         render :new, status: :unprocessable_entity
       end
     rescue => e
-      # エラーが発生した場合、作成済みのプロジェクトがあれば削除
-      if @slide.project_path.present? && File.exist?(@slide.project_path)
-        FileUtils.rm_rf(@slide.project_path)
-      end
       @slide.errors.add(:base, "プロジェクト作成エラー: #{e.message}")
       render :new, status: :unprocessable_entity
     end
   end
 
   def build
-    service = SlidevProjectService.new
+    # ビルド中や失敗状態のスライドは操作を拒否
+    if @slide.building?
+      redirect_to slides_path, alert: 'このスライドは現在ビルド中です'
+      return
+    end
+
     begin
-      service.build_project(@slide)
-      redirect_to slides_path, notice: 'スライドをビルドしました'
+      # ステータスを即座に「building」に更新してブロードキャスト
+      @slide.update(status: 'building', error_message: nil)
+
+      # バックグラウンドジョブとしてビルドをエンキュー
+      BuildSlidevProjectJob.perform_later(@slide.id)
+      redirect_to slides_path, notice: 'スライドをビルド中です。しばらくお待ちください...'
     rescue => e
       redirect_to slides_path, alert: "ビルドエラー: #{e.message}"
     end
@@ -84,6 +101,40 @@ class SlidesController < ApplicationController
       redirect_to slides_path, notice: 'スライドを削除しました'
     rescue => e
       redirect_to slides_path, alert: "削除エラー: #{e.message}"
+    end
+  end
+
+  def edit
+    # ビルド中のスライドは編集を拒否
+    if @slide.building?
+      redirect_to slides_path, alert: 'このスライドは現在ビルド中です'
+      return
+    end
+
+    service = SlidevProjectService.new
+    begin
+      @slides_content = service.read_slides_md(@slide)
+    rescue => e
+      redirect_to slides_path, alert: "編集画面の読み込みエラー: #{e.message}"
+    end
+  end
+
+  def update
+    # ビルド中のスライドは更新を拒否
+    if @slide.building?
+      redirect_to slides_path, alert: 'このスライドは現在ビルド中です'
+      return
+    end
+
+    service = SlidevProjectService.new
+    begin
+      service.write_slides_md(@slide, params[:slide][:slides_content])
+      redirect_to slides_path, notice: 'スライドを更新しました'
+    rescue => e
+      @slide = Slide.find(params[:id])
+      @slides_content = params[:slide][:slides_content]
+      flash.now[:alert] = "更新エラー: #{e.message}"
+      render :edit, status: :unprocessable_entity
     end
   end
 

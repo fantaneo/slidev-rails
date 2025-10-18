@@ -1,38 +1,96 @@
 <h2 style="margin-bottom: 20px; color: #2c3e50;">スライド一覧</h2>
 
 <% if @slides.empty? %>
-  <div class="card">
-    <p style="text-align: center; color: #6c757d;">
-      スライドがまだありません。新規作成ボタンから最初のスライドを作成してください。
-    </p>
-  </div>
+<div class="card">
+  <p style="text-align: center; color: #6c757d;">
+    スライドがまだありません。新規作成ボタンから最初のスライドを作成してください。
+  </p>
+</div>
 <% else %>
-  <table>
-    <thead>
-      <tr>
-        <th>名前</th>
-        <th>説明</th>
-        <th>URL</th>
-        <th style="width: 200px;">操作</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @slides.each do |slide| %>
-        <tr>
-          <td><%= slide.name %></td>
-          <td><%= slide.description %></td>
-          <td>
-            <%= link_to "/slides/#{slide.slug}/", "/slides/#{slide.slug}/", target: '_blank' %>
-          </td>
-          <td>
-            <%= button_to 'ビルド', build_slide_path(slide), method: :post, class: 'btn btn-sm btn-info', style: 'margin-right: 5px;' %>
-            <%= button_to '削除', slide_path(slide), method: :delete, 
-                          data: { confirm: '本当に削除しますか？' }, 
-                          class: 'btn btn-sm btn-danger' %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+<table>
+  <thead>
+    <tr>
+      <th>名前</th>
+      <th>説明</th>
+      <th>ステータス</th>
+      <th>URL</th>
+      <th style="width: 250px;">操作</th>
+    </tr>
+  </thead>
+  <tbody id="slides-container">
+    <% @slides.each do |slide| %>
+      <%= render "slides/slide", slide: slide %>
+    <% end %>
+  </tbody>
+</table>
 <% end %>
 
+<script>
+(function pollSlides() {
+  // ポーリング用のタイマーID
+  let pollingTimer = null;
+  
+  function startPolling() {
+    // 既存のポーリングがあれば停止
+    if (pollingTimer) clearInterval(pollingTimer);
+    
+    // 30秒ごとにスライド一覧を更新
+    pollingTimer = setInterval(function() {
+      const container = document.getElementById('slides-container');
+      if (!container) {
+        clearInterval(pollingTimer);
+        return;
+      }
+      
+      fetch('<%= slides_path %>.json', {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.json();
+        })
+        .then(slides => {
+          // 各スライドの現在の状態を取得して更新
+          slides.forEach(slide => {
+            const slideId = 'slide_' + slide.id;
+            const currentRow = document.getElementById(slideId);
+            
+            if (currentRow) {
+              // サーバーから最新の行HTMLを取得
+              fetch(`<%= slides_path %>/${slide.id}/slide_html`, {
+                credentials: 'same-origin'
+              })
+                .then(res => res.text())
+                .then(html => {
+                  // 新しい要素を作成
+                  const temp = document.createElement('tbody');
+                  temp.innerHTML = html;
+                  const newRow = temp.firstChild;
+                  
+                  if (newRow && currentRow.innerHTML !== newRow.innerHTML) {
+                    // 行全体を置き換え
+                    currentRow.replaceWith(newRow);
+                  }
+                })
+                .catch(err => {});
+            }
+          });
+        })
+        .catch(err => {});
+    }, 30000); // 30秒ごと
+  }
+  
+  // ページ読み込み完了後にポーリング開始
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startPolling);
+  } else {
+    startPolling();
+  }
+  
+  // ページ離脱時にポーリング停止
+  window.addEventListener('beforeunload', function() {
+    if (pollingTimer) clearInterval(pollingTimer);
+  });
+})();
+</script>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_18_062603) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_19_005934) do
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer "priority", default: 0, null: false
     t.integer "attempts", default: 0, null: false
@@ -33,10 +33,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_18_062603) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "status", default: "pending"
+    t.string "status", default: "pending", null: false
     t.text "error_message"
     t.index ["slug"], name: "index_slides_on_slug", unique: true
-    t.index ["status"], name: "index_slides_on_status"
   end
 
 end

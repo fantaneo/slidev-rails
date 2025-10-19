@@ -6,6 +6,7 @@ if [ -f tmp/pids/server.pid ]; then
   rm tmp/pids/server.pid
 fi
 
+# 依存関係をインストール
 bundle install
 
 # データベースが存在しない場合は作成とマイグレーションを実行
@@ -21,6 +22,8 @@ fi
 # 必要なディレクトリを確認
 mkdir -p slidev_projects public/slides log tmp/pids tmp/sockets tmp/cache
 
+# ワーカーを起動
+bin/delayed_job start&
+
 # 渡されたコマンドを実行
 exec "$@"
-

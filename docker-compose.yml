@@ -22,12 +22,12 @@ services:
     stdin_open: true
     tty: true
     # メモリ制限を設定（Slidevのビルドに十分なメモリを確保）
-    deploy:
-      resources:
-        limits:
-          memory: 6G
-        reservations:
-          memory: 2G
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 6G
+    #     reservations:
+    #       memory: 2G
 
 volumes:
   node_modules:

@@ -29,11 +29,13 @@
     <% if slide.building? %>
     <span style="color: #6c757d;">ビルド中のため操作不可</span>
     <% else %>
-    <%= link_to '編集', edit_slide_path(slide), class: 'btn btn-sm btn-warning', style: 'margin-right: 5px; text-decoration: none; display: inline-block;' %>
-    <%= button_to 'ビルド', build_slide_path(slide), method: :post, class: 'btn btn-sm btn-info', style: 'margin-right: 5px;' %>
-    <%= button_to '削除', slide_path(slide), method: :delete, 
-                        data: { confirm: '本当に削除しますか？' }, 
-                        class: 'btn btn-sm btn-danger' %>
+    <div style="display: flex; gap: 5px; align-items: center;">
+      <%= link_to '編集', edit_slide_path(slide), class: 'btn btn-sm btn-warning', style: 'text-decoration: none;' %>
+      <%= button_to 'ビルド', build_slide_path(slide), method: :post, class: 'btn btn-sm btn-info', style: 'margin: 0;' %>
+      <%= button_to '削除', slide_path(slide), method: :delete, 
+                          data: { confirm: '本当に削除しますか？' }, 
+                          class: 'btn btn-sm btn-danger', style: 'margin: 0;' %>
+    </div>
     <% end %>
   </td>
 </tr>
